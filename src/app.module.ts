@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { BotModule } from './bot/bot.module.js';
-import { EmailServiceModule } from './email_service/email_service.module.js';
+import { EmailModule } from './email_service/email_service.module.js';
 import { TelegrafModule } from 'nestjs-telegraf';
 
 @Module({
@@ -22,7 +22,7 @@ import { TelegrafModule } from 'nestjs-telegraf';
       inject: [ConfigService],
     }),
     BotModule,
-    EmailServiceModule,
+    EmailModule,
   ],
 })
 export class AppModule {}

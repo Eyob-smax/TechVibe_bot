@@ -1,7 +1,6 @@
 import { Update, Start, Help, On, Hears, Ctx, Command } from 'nestjs-telegraf';
 import { Context } from 'telegraf';
 import { BotService } from './bot.service.js';
-import { log } from 'console';
 
 @Update()
 export class BotUpdate {
@@ -18,10 +17,7 @@ export class BotUpdate {
   }
 
   @Command('about')
-  async about(@Ctx() ctx: Context) {
-    const message = this.botService.getAboutMessage();
-    await ctx.reply(message);
-  }
+  async about(@Ctx() ctx: Context) {}
 
   @Hears('hi')
   async sayHi(@Ctx() ctx: Context) {

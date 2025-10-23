@@ -1,35 +1,19 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectBot } from 'nestjs-telegraf';
 import { Context, Telegraf } from 'telegraf';
 import { addTags } from './utils/uitls.js';
+import { EmailService } from '../email_service/email_service.service.js';
 
 @Injectable()
 export class BotService {
+  private readonly logger = new Logger(BotService.name);
+
   constructor(
     private readonly config: ConfigService,
     @InjectBot() private readonly bot: Telegraf,
+    private readonly emailService: EmailService,
   ) {}
-
-  getAboutMessage(): string {
-    return '🤖 This is Eyob’s NestJS Telegram bot built using nestjs-telegraf.';
-  }
-
-  generateReply(message: string): string {
-    if (message.toLowerCase().includes('project')) {
-      return '🔥 Sounds like you’re working on something awesome!';
-    } else if (message.toLowerCase().includes('bye')) {
-      return '👋 See you later!';
-    }
-    return 'I’m not sure what you mean, but I’m learning 😅';
-  }
-
-  async postToChannel(message: string) {
-    const channelId = this.config.get<string>('CHANNEL_ID') as string;
-    await this.bot.telegram.sendMessage(channelId, message, {
-      parse_mode: 'HTML',
-    });
-  }
 
   async onChannelPost(ctx: Context) {
     try {
@@ -55,7 +39,7 @@ export class BotService {
           channelId,
           ctx.channelPost.message_id,
           undefined,
-          `${formatted}`,
+          formatted,
           { parse_mode: 'HTML' },
         );
       } else if ((ctx.channelPost as any)?.text) {
@@ -63,12 +47,44 @@ export class BotService {
           channelId,
           ctx.channelPost.message_id,
           undefined,
-          `${formatted}`,
+          formatted,
           { parse_mode: 'HTML' },
         );
       }
+
+      await this.bot.telegram.sendMessage(
+        1259654531,
+        `A post was just updated on your channel:\n\n${messageText}
+        <b>Updated post:</b><br>${formatted}`,
+        {
+          parse_mode: 'HTML',
+        },
+      );
+
+      this.logger.log('✅ Channel post processed and email sent.');
     } catch (err) {
-      console.error('❌ Error updating channel post:', err);
+      this.logger.error('❌ Failed to process channel post', err.stack);
+
+      try {
+        await this.bot.telegram.sendMessage(
+          1259654531,
+          `🚨 Error in Telegram Bot\n\n
+          An error occurred while processing a channel post:\n\n${err.message}
+          <b>An error occurred in the bot:</b><br><pre>${err.stack}</pre>`,
+        );
+        await this.emailService.sendMail(
+          'eyobsmax@gmail.com',
+          '🚨 Error in Telegram Bot',
+          `An error occurred while processing a channel post:\n\n${err.message}
+          <b>An error occurred in the bot:</b><br><pre>${err.stack}</pre>`,
+        );
+        this.logger.log('📧 Error notification sent successfully.');
+      } catch (emailErr) {
+        this.logger.error(
+          '❌ Failed to send error notification email',
+          emailErr.stack,
+        );
+      }
     }
   }
 }
