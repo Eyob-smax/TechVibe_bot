@@ -24,37 +24,15 @@ export class BotService {
     if (!channelId || techVibeChannelId !== channelId) return;
 
     try {
-      let messageText = '';
-      let mediaType:
-        | 'text'
-        | 'photo'
-        | 'video'
-        | 'document'
-        | 'audio'
-        | 'animation' = 'text';
-
       const post = ctx.channelPost as any;
-
-      if (post.text) {
-        messageText = post.text;
-      } else if (post.caption) {
-        messageText = post.caption;
-        if (post.photo) mediaType = 'photo';
-        else if (post.video) mediaType = 'video';
-        else if (post.document) mediaType = 'document';
-        else if (post.audio) mediaType = 'audio';
-        else if (post.animation) mediaType = 'animation';
-      }
-
-      if (!messageText) return;
+      const messageText = post.text || post.caption || '';
 
       const finalTags = addTags(messageText);
       const formatted = finalTags.replace(
         '@devwitheyob',
         '<b>@devwitheyob</b>',
       );
-
-      if (mediaType === 'text') {
+      if (post.text) {
         await this.bot.telegram.editMessageText(
           channelId,
           post.message_id,
@@ -62,7 +40,14 @@ export class BotService {
           formatted,
           { parse_mode: 'HTML' },
         );
-      } else {
+      } else if (
+        post.caption ||
+        post.photo ||
+        post.video ||
+        post.document ||
+        post.audio ||
+        post.animation
+      ) {
         await this.bot.telegram.editMessageCaption(
           channelId,
           post.message_id,
@@ -72,9 +57,10 @@ export class BotService {
         );
       }
 
+      // Notify admin
       await this.bot.telegram.sendMessage(
         adminId,
-        `A post was just updated on your channel:\n\n${messageText}\n\n<b>Updated post:</b>\n<b><i>${formatted}</b></i>`,
+        `A post was just updated on your channel:\n${messageText}\n<b>Updated post:</b>\n${formatted}`,
         { parse_mode: 'HTML' },
       );
 
