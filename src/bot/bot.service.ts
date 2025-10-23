@@ -16,16 +16,36 @@ export class BotService {
   ) {}
 
   async onChannelPost(ctx: Context) {
+    const techVibeChannelId = this.config.get<string>('CHANNEL_ID');
+    const adminId =
+      Number(this.config.get<string>('BOT_ADMIN_ID')) || 1259654531;
+    const channelId = ctx?.channelPost?.chat?.id?.toString();
+
+    if (!channelId || techVibeChannelId !== channelId) return;
+
     try {
-      const TechVibeChannelId = this.config.get<string>('CHANNEL_ID');
-      const channelId = ctx.channelPost?.chat.id;
+      let messageText = '';
+      let mediaType:
+        | 'text'
+        | 'photo'
+        | 'video'
+        | 'document'
+        | 'audio'
+        | 'animation' = 'text';
 
-      if (!channelId || TechVibeChannelId !== channelId.toString()) return;
+      const post = ctx.channelPost as any;
 
-      const messageText =
-        (ctx.channelPost as any)?.text ||
-        (ctx.channelPost as any)?.caption ||
-        '';
+      if (post.text) {
+        messageText = post.text;
+      } else if (post.caption) {
+        messageText = post.caption;
+        if (post.photo) mediaType = 'photo';
+        else if (post.video) mediaType = 'video';
+        else if (post.document) mediaType = 'document';
+        else if (post.audio) mediaType = 'audio';
+        else if (post.animation) mediaType = 'animation';
+      }
+
       if (!messageText) return;
 
       const finalTags = addTags(messageText);
@@ -34,18 +54,18 @@ export class BotService {
         '<b>@devwitheyob</b>',
       );
 
-      if ((ctx.channelPost as any)?.caption) {
-        await this.bot.telegram.editMessageCaption(
+      if (mediaType === 'text') {
+        await this.bot.telegram.editMessageText(
           channelId,
-          ctx.channelPost.message_id,
+          post.message_id,
           undefined,
           formatted,
           { parse_mode: 'HTML' },
         );
-      } else if ((ctx.channelPost as any)?.text) {
-        await this.bot.telegram.editMessageText(
+      } else {
+        await this.bot.telegram.editMessageCaption(
           channelId,
-          ctx.channelPost.message_id,
+          post.message_id,
           undefined,
           formatted,
           { parse_mode: 'HTML' },
@@ -53,36 +73,33 @@ export class BotService {
       }
 
       await this.bot.telegram.sendMessage(
-        1259654531,
-        `A post was just updated on your channel:\n\n${messageText}
-        <b>Updated post:</b><br>${formatted}`,
-        {
-          parse_mode: 'HTML',
-        },
+        adminId,
+        `A post was just updated on your channel:\n\n${messageText}\n\n<b>Updated post:</b>\n<b><i>${formatted}</b></i>`,
+        { parse_mode: 'HTML' },
       );
 
-      this.logger.log('✅ Channel post processed and email sent.');
-    } catch (err) {
-      this.logger.error('❌ Failed to process channel post', err.stack);
+      this.logger.log('✅ Channel post processed successfully.');
+    } catch (err: any) {
+      this.logger.error('❌ Failed to process channel post', err?.stack);
 
       try {
         await this.bot.telegram.sendMessage(
-          1259654531,
-          `🚨 Error in Telegram Bot\n\n
-          An error occurred while processing a channel post:\n\n${err.message}
-          <b>An error occurred in the bot:</b><br><pre>${err.stack}</pre>`,
+          adminId,
+          `🚨 Error in Telegram Bot\n\nAn error occurred while processing a channel post:\n\n${err.message}\n<b>Stack trace:</b>\n<pre>${err.stack}</pre>`,
+          { parse_mode: 'HTML' },
         );
+
         await this.emailService.sendMail(
           'eyobsmax@gmail.com',
           '🚨 Error in Telegram Bot',
-          `An error occurred while processing a channel post:\n\n${err.message}
-          <b>An error occurred in the bot:</b><br><pre>${err.stack}</pre>`,
+          `<b>An error occurred while processing a channel post:</b><br><pre>${err.stack}</pre>`,
         );
+
         this.logger.log('📧 Error notification sent successfully.');
-      } catch (emailErr) {
+      } catch (notifyErr: any) {
         this.logger.error(
           '❌ Failed to send error notification email',
-          emailErr.stack,
+          notifyErr?.stack,
         );
       }
     }
