@@ -1,6 +1,7 @@
 import { Update, Start, Help, On, Hears, Ctx, Command } from 'nestjs-telegraf';
 import { Context } from 'telegraf';
 import { BotService } from './bot.service.js';
+import { log } from 'console';
 
 @Update()
 export class BotUpdate {
@@ -28,12 +29,10 @@ export class BotUpdate {
   }
 
   @On('text')
-  async onText(@Ctx() ctx: Context) {
-    const m = (
-      ctx.message as typeof ctx.message & {
-        text: unknown;
-      }
-    )?.['text'];
-    await ctx.reply('Hey u just said ' + m);
+  async onText(@Ctx() ctx: Context) {}
+
+  @On('channel_post')
+  async onChannelPost(@Ctx() ctx: Context) {
+    await this.botService.onChannelPost(ctx);
   }
 }
