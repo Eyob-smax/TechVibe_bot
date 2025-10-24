@@ -48,7 +48,7 @@ export class PostsService {
         include: { tags: { include: { tag: true } } },
       });
       return {
-        message: `New post saved to the database: <a href="${post.post_link.replace('https://', '')}"><b>Go to the message</b></a>`,
+        message: `New post saved to the database: <a href="${post.post_link}"><b>Go to the message</b></a>`,
       };
     } catch (err) {
       console.error('Error saving post:', err);
