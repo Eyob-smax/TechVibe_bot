@@ -2,8 +2,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectBot } from 'nestjs-telegraf';
 import { Context, Telegraf } from 'telegraf';
-import { addTags } from './utils/uitls.js';
+import { addTags, formatDate, FormatPostData } from './utils/uitls.js';
 import { EmailService } from '../email_service/email_service.service.js';
+import { PostsService } from '../posts/posts.service.js';
 
 @Injectable()
 export class BotService {
@@ -13,6 +14,7 @@ export class BotService {
     private readonly config: ConfigService,
     @InjectBot() private readonly bot: Telegraf,
     private readonly emailService: EmailService,
+    private readonly postService: PostsService,
   ) {}
 
   async onChannelPost(ctx: Context) {
@@ -47,6 +49,22 @@ export class BotService {
       const options = { entities };
 
       if (post.text) {
+        const { textWithoutTags, uniqueTags } = FormatPostData(post.text);
+        if (uniqueTags.length > 0 && uniqueTags.includes('#ArticleOfTheDay')) {
+          const { message } = await this.postService.saveNewPosts({
+            post: textWithoutTags,
+            tags: uniqueTags,
+            date: new Date(post?.date),
+            date_string: formatDate(post?.date) || 'default',
+            post_link: `https://t.me/devwitheyob/devwitheyob/${post?.message_id}`,
+          });
+          if (message) {
+            await this.bot.telegram.sendMessage(adminId, message, {
+              parse_mode: 'HTML',
+            });
+          }
+        }
+        console.log(textWithoutTags, uniqueTags);
         await this.bot.telegram.editMessageText(
           channelId,
           post.message_id,

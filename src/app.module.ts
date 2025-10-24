@@ -5,6 +5,7 @@ import { EmailModule } from './email_service/email_service.module.js';
 import { TelegrafModule } from 'nestjs-telegraf';
 import { DatabaseModule } from './database/database.module.js';
 import { NewsModule } from './news/news.module.js';
+import { PostsModule } from './posts/posts.module.js';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { NewsModule } from './news/news.module.js';
     EmailModule,
     DatabaseModule,
     NewsModule,
+    PostsModule,
   ],
 })
 export class AppModule {}
