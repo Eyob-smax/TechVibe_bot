@@ -1,10 +1,14 @@
 import { Update, Start, Help, On, Hears, Ctx, Command } from 'nestjs-telegraf';
 import { Context } from 'telegraf';
 import { BotService } from './bot.service.js';
+import { NewsService } from '../news/news.service.js';
 
 @Update()
 export class BotUpdate {
-  constructor(private readonly botService: BotService) {}
+  constructor(
+    private readonly botService: BotService,
+    private readonly newsService: NewsService,
+  ) {}
 
   @Start()
   async onStart(@Ctx() ctx: Context) {
@@ -25,7 +29,14 @@ export class BotUpdate {
   }
 
   @On('text')
-  async onText(@Ctx() ctx: Context) {}
+  async onText(@Ctx() ctx: Context) {
+    const TechNews = await this.newsService.getDailyArticles(
+      (ctx.message as any).text,
+    );
+    TechNews.forEach(async (text) => {
+      await ctx.replyWithHTML(text);
+    });
+  }
 
   @On('channel_post')
   async onChannelPost(@Ctx() ctx: Context) {

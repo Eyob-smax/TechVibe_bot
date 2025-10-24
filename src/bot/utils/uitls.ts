@@ -1,3 +1,5 @@
+import { IDailyArticle } from './types.js';
+
 export function addTags(text: string) {
   if (!text) return '@devwitheyob\n#TechVibe @alnova19';
 
@@ -12,4 +14,21 @@ export function addTags(text: string) {
   const tagSection = `\n\n${uniqueTags.join(' ')}`;
 
   return `${textWithoutTags}${tagSection}`;
+}
+
+export function formatDailyTechNews(news: IDailyArticle[]) {
+  return news.map((eachNew) => {
+    const title = eachNew.title?.trim() || '';
+    const description = eachNew.description?.trim() || '';
+    const url = eachNew.source_url?.trim() || '';
+
+    const formattedText =
+      `<b>${title}</b>\n\n` +
+      `${description}\n\n` +
+      `<a href="${url}"><b>Read more</b></a>\n`;
+
+    const formattedTextWithTags = addTags(formattedText);
+
+    return formattedTextWithTags;
+  });
 }

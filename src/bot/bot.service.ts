@@ -26,20 +26,33 @@ export class BotService {
     try {
       const post = ctx.channelPost as any;
       const originalText = post.text || post.caption || '';
-      const hasEntities = !!(post.entities || post.caption_entities);
-
       const taggedText = addTags(originalText);
-      const formatted = taggedText.replace(
-        '@devwitheyob',
-        '<b>@devwitheyob</b>',
-      );
+      const originalEntities = post.entities || post.caption_entities || [];
+
+      let entities = originalEntities.map((e: any) => ({ ...e }));
+
+      const target = '@devwitheyob';
+      let offset = taggedText.indexOf(target);
+      while (offset !== -1) {
+        entities.push({
+          type: 'bold',
+          offset,
+          length: target.length,
+        });
+        offset = taggedText.indexOf(target, offset + target.length);
+      }
+
+      entities.sort((a: any, b: any) => a.offset - b.offset);
+
+      const options = { entities };
+
       if (post.text) {
         await this.bot.telegram.editMessageText(
           channelId,
           post.message_id,
           undefined,
-          formatted,
-          hasEntities ? { entities: post.entities } : { parse_mode: 'HTML' },
+          taggedText,
+          options,
         );
       } else if (
         post.caption ||
@@ -53,16 +66,14 @@ export class BotService {
           channelId,
           post.message_id,
           undefined,
-          formatted,
-          hasEntities
-            ? { caption_entities: post.caption_entities }
-            : { parse_mode: 'HTML' },
+          taggedText,
+          { caption_entities: entities },
         );
       }
 
       await this.bot.telegram.sendMessage(
         adminId,
-        `A post was just updated on your channel:\n\n${originalText}\n<b>Updated post:</b>\n${taggedText}`,
+        `A post was just updated on your channel:\n\n${originalText}\n<b>Updated post:</b>\n<i>${taggedText}</i>`,
         { parse_mode: 'HTML', entities: post.entities },
       );
 

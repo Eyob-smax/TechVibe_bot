@@ -4,6 +4,7 @@ import { BotModule } from './bot/bot.module.js';
 import { EmailModule } from './email_service/email_service.module.js';
 import { TelegrafModule } from 'nestjs-telegraf';
 import { DatabaseModule } from './database/database.module.js';
+import { NewsModule } from './news/news.module.js';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { DatabaseModule } from './database/database.module.js';
     BotModule,
     EmailModule,
     DatabaseModule,
+    NewsModule,
   ],
 })
 export class AppModule {}
