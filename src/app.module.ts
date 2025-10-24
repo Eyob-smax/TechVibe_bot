@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { BotModule } from './bot/bot.module.js';
 import { EmailModule } from './email_service/email_service.module.js';
 import { TelegrafModule } from 'nestjs-telegraf';
+import { DatabaseModule } from './database/database.module.js';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { TelegrafModule } from 'nestjs-telegraf';
     }),
     BotModule,
     EmailModule,
+    DatabaseModule,
   ],
 })
 export class AppModule {}

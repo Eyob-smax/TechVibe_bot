@@ -25,10 +25,11 @@ export class BotService {
 
     try {
       const post = ctx.channelPost as any;
-      const messageText = post.text || post.caption || '';
+      const originalText = post.text || post.caption || '';
+      const hasEntities = !!(post.entities || post.caption_entities);
 
-      const finalTags = addTags(messageText);
-      const formatted = finalTags.replace(
+      const taggedText = addTags(originalText);
+      const formatted = taggedText.replace(
         '@devwitheyob',
         '<b>@devwitheyob</b>',
       );
@@ -38,7 +39,7 @@ export class BotService {
           post.message_id,
           undefined,
           formatted,
-          { parse_mode: 'HTML' },
+          hasEntities ? { entities: post.entities } : { parse_mode: 'HTML' },
         );
       } else if (
         post.caption ||
@@ -53,15 +54,16 @@ export class BotService {
           post.message_id,
           undefined,
           formatted,
-          { parse_mode: 'HTML' },
+          hasEntities
+            ? { caption_entities: post.caption_entities }
+            : { parse_mode: 'HTML' },
         );
       }
 
-      // Notify admin
       await this.bot.telegram.sendMessage(
         adminId,
-        `A post was just updated on your channel:\n${messageText}\n<b>Updated post:</b>\n${formatted}`,
-        { parse_mode: 'HTML' },
+        `A post was just updated on your channel:\n\n${originalText}\n<b>Updated post:</b>\n${taggedText}`,
+        { parse_mode: 'HTML', entities: post.entities },
       );
 
       this.logger.log('✅ Channel post processed successfully.');
@@ -71,7 +73,7 @@ export class BotService {
       try {
         await this.bot.telegram.sendMessage(
           adminId,
-          `🚨 Error in Telegram Bot\n\nAn error occurred while processing a channel post:\n\n${err.message}\n<b>Stack trace:</b>\n<pre>${err.stack}</pre>`,
+          `🚨 Error in Telegram Bot\n\n${err.message}\n<pre>${err.stack}</pre>`,
           { parse_mode: 'HTML' },
         );
 
