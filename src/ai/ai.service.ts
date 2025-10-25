@@ -3,11 +3,6 @@ import { ConfigService } from '@nestjs/config';
 import { Observable } from 'rxjs';
 import { GoogleGenAI } from '@google/genai';
 
-// Define interfaces for type safety (adjust based on actual GoogleGenAI library)
-interface StreamChunk {
-  text?: string;
-}
-
 interface GenerateContentStreamOptions {
   model: string;
   config: {
@@ -17,6 +12,9 @@ interface GenerateContentStreamOptions {
   contents: Array<{ role: string; parts: Array<{ text: string }> }>;
 }
 
+export interface AiStreamChunk {
+  data: string;
+}
 @Injectable()
 export class AiService {
   private readonly logger = new Logger(AiService.name);
@@ -81,8 +79,4 @@ export class AiService {
       };
     });
   }
-}
-
-export interface AiStreamChunk {
-  data: string;
 }
