@@ -64,7 +64,6 @@ export class BotService {
             });
           }
         }
-        console.log(textWithoutTags, uniqueTags);
         await this.bot.telegram.editMessageText(
           channelId,
           post.message_id,

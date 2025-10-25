@@ -6,6 +6,7 @@ import { TelegrafModule } from 'nestjs-telegraf';
 import { DatabaseModule } from './database/database.module.js';
 import { NewsModule } from './news/news.module.js';
 import { PostsModule } from './posts/posts.module.js';
+import { AiModule } from './ai/ai.module.js';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { PostsModule } from './posts/posts.module.js';
     DatabaseModule,
     NewsModule,
     PostsModule,
+    AiModule,
   ],
 })
 export class AppModule {}
