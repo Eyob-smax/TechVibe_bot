@@ -79,6 +79,21 @@ export class BotService {
         post.audio ||
         post.animation
       ) {
+        const { textWithoutTags, uniqueTags } = FormatPostData(post.caption);
+        if (uniqueTags.length > 0 && uniqueTags.includes('#ArticleOfTheDay')) {
+          const { message } = await this.postService.saveNewPosts({
+            post: textWithoutTags,
+            tags: uniqueTags,
+            date: new Date(post?.date),
+            date_string: formatDate(post?.date) || 'default',
+            post_link: `https://t.me/devwitheyob/devwitheyob/${post?.message_id}`,
+          });
+          if (message) {
+            await this.bot.telegram.sendMessage(adminId, message, {
+              parse_mode: 'HTML',
+            });
+          }
+        }
         await this.bot.telegram.editMessageCaption(
           channelId,
           post.message_id,
