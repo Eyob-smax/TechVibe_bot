@@ -38,7 +38,7 @@ export class AiService {
 
       (async () => {
         try {
-          const model = this.config.get<string>('AI_MODEL', 'gemini-2.5-pro');
+          const model = this.config.get<string>('AI_MODEL');
           const tools = [{ googleSearch: {} }];
           const config = { thinkingConfig: { thinkingBudget: -1 }, tools };
           const contents = [{ role: 'user', parts: [{ text: topic }] }];
