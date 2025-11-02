@@ -1,7 +1,12 @@
-import { IDailyArticle, IPost } from './types.js';
+import { IDailyArticle } from './types.js';
 
 export function addTags(text: string) {
-  if (!text) return '@devwitheyob\n#TechVibe @alnova19';
+  let allowUpdateGrammar = false;
+  if (!text)
+    return {
+      taggedText: '@devwitheyob\n#TechVibe @alnova19',
+      allowUpdateGrammar,
+    };
 
   const foundTags = Array.from(text.matchAll(/(#\w+|@\w+)/g)).map((m) => m[0]);
 
@@ -11,7 +16,11 @@ export function addTags(text: string) {
     new Set(['@devwitheyob', '\n#TechVibe', ...foundTags, '@alnova19']),
   );
 
-  const skipThese = ['#TechVibe', '#skip', '#save'];
+  if (uniqueTags.includes('#gupdate')) {
+    allowUpdateGrammar = true;
+  }
+
+  const skipThese = ['#TechVibe', '#skip', '#save', '#gupdate'];
 
   uniqueTags = uniqueTags.filter((tag) => {
     return skipThese.includes(tag) ? false : true;
@@ -19,7 +28,7 @@ export function addTags(text: string) {
 
   const tagSection = `\n\n${uniqueTags.join(' ')}`;
 
-  return `${textWithoutTags}${tagSection}`;
+  return { taggedText: `${textWithoutTags}${tagSection}`, allowUpdateGrammar };
 }
 
 export function formatDailyTechNews(news: IDailyArticle[]) {
@@ -33,9 +42,9 @@ export function formatDailyTechNews(news: IDailyArticle[]) {
       `${description}\n\n` +
       `<a href="${url}"><b>Read more</b></a>\n`;
 
-    const formattedTextWithTags = addTags(formattedText);
+    const { taggedText } = addTags(formattedText);
 
-    return formattedTextWithTags;
+    return taggedText;
   });
 }
 

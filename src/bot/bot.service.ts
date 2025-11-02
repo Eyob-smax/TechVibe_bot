@@ -1,20 +1,24 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { InjectBot } from 'nestjs-telegraf';
-import { Context, Telegraf } from 'telegraf';
+import { InjectBot, On } from 'nestjs-telegraf';
+import { Context, Markup, Telegraf } from 'telegraf';
+// import { CallbackQuery } from 'telegraf/typings/core/types/typegram';
 import { addTags, formatDate, FormatPostData } from './utils/uitls.js';
 import { EmailService } from '../email_service/email_service.service.js';
 import { PostsService } from '../posts/posts.service.js';
+import { AiService } from '../ai/ai.service.js';
 
 @Injectable()
 export class BotService {
   private readonly logger = new Logger(BotService.name);
+  private grammarUpdates = new Map<number, { text: string; entities: any[] }>();
 
   constructor(
     private readonly config: ConfigService,
     @InjectBot() private readonly bot: Telegraf,
     private readonly emailService: EmailService,
     private readonly postService: PostsService,
+    private readonly ai: AiService,
   ) {}
 
   async onChannelPost(ctx: Context) {
@@ -29,11 +33,14 @@ export class BotService {
     try {
       const post = ctx.channelPost as any;
       const originalText = post.text || post.caption || '';
-      const taggedText = addTags(originalText);
+      const { taggedText, allowUpdateGrammar } = addTags(originalText);
       const entities = this.prepareEntities(post, taggedText);
-
       await this.handlePostSaving(post);
-      await this.editPostMessage(post, channelId, taggedText, entities);
+      if (allowUpdateGrammar) {
+        await this.updateGrammar(taggedText, post, channelId);
+      } else {
+        await this.editPostMessage(post, channelId, taggedText, entities);
+      }
       await this.notifyAdminOnUpdate(
         adminId,
         originalText,
@@ -151,6 +158,84 @@ export class BotService {
       `A post was just updated on your channel:\n\n${originalText}\n<b>Updated post:</b>\n<i>${taggedText}</i>`,
       { parse_mode: 'HTML', entities },
     );
+  }
+
+  private async updateGrammar(text: string, post: any, channelId: string) {
+    try {
+      const updatedText = await this.ai.updateText(text);
+      if (updatedText === 'no grammar update') {
+        const entities = this.prepareEntities(post, text);
+        await this.editPostMessage(post, channelId, text, entities);
+        return;
+      }
+      const newEntities: any[] = [];
+      const target = '@devwitheyob';
+      let offset = updatedText.indexOf(target);
+      while (offset !== -1) {
+        newEntities.push({
+          type: 'bold',
+          offset,
+          length: target.length,
+        });
+        offset = updatedText.indexOf(target, offset + target.length);
+      }
+      newEntities.sort((a: any, b: any) => a.offset - b.offset);
+
+      this.grammarUpdates.set(post.message_id, {
+        text: updatedText,
+        entities: newEntities,
+      });
+
+      const adminId = Number(this.config.get<string>('BOT_ADMIN_ID'));
+      const kb = Markup.inlineKeyboard([
+        [Markup.button.callback('Post it', `post_grammar:${post.message_id}`)],
+      ]);
+      await this.bot.telegram.sendMessage(
+        adminId,
+        `Suggested grammar update:\n\n${updatedText}`,
+        {
+          reply_markup: kb.reply_markup,
+        },
+      );
+    } catch (error) {
+      this.logger.error('Failed to update grammar', error);
+    }
+  }
+
+  @On('callback_query')
+  async onCallbackQuery(ctx: Context) {
+    const query = ctx.callbackQuery;
+    if (!query) {
+      return console.log('no query');
+    }
+    if (!('data' in query)) return;
+
+    const data = query.data;
+    if (data.startsWith('post_grammar:')) {
+      const messageId = Number(data.split(':')[1]);
+      const update = this.grammarUpdates.get(messageId);
+
+      if (!update) {
+        await ctx.answerCbQuery('Update expired or not found.');
+        return;
+      }
+
+      try {
+        const channelId = this.config.get<string>('CHANNEL_ID');
+        if (!channelId) {
+          return;
+        }
+        await this.bot.telegram.sendMessage(channelId, update.text, {
+          entities: update.entities,
+        });
+        await ctx.answerCbQuery('Posted successfully!');
+      } catch (err) {
+        await ctx.answerCbQuery('Failed to post.');
+        this.handleError(err, Number(this.config.get<string>('BOT_ADMIN_ID')!));
+      } finally {
+        this.grammarUpdates.delete(messageId);
+      }
+    }
   }
 
   private handleError(err: any, adminId: number): void {
