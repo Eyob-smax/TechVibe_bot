@@ -12,18 +12,20 @@ import { AiService } from '../ai/ai.service.js';
 export class BotService {
   private readonly logger = new Logger(BotService.name);
   grammarUpdates = new Map<number, { text: string; entities: any[] }>();
-
+  private bot_admin_id: number;
   constructor(
     private config: ConfigService,
     @InjectBot() private readonly bot: Telegraf,
     private readonly emailService: EmailService,
     private readonly postService: PostsService,
     private readonly ai: AiService,
-  ) {}
+  ) {
+    this.bot_admin_id = Number(this.config.get<string>('BOT_ADMIN_ID')!);
+  }
 
   async onChannelPost(ctx: Context) {
     const techVibeChannelId = this.config.get<string>('CHANNEL_ID');
-    const adminId = Number(this.config.get<string>('BOT_ADMIN_ID'));
+
     const channelId = ctx?.channelPost?.chat?.id?.toString();
 
     if (!channelId || techVibeChannelId !== channelId) {
@@ -42,7 +44,7 @@ export class BotService {
         await this.editPostMessage(post, channelId, taggedText, entities);
       }
       await this.notifyAdminOnUpdate(
-        adminId,
+        this.bot_admin_id,
         originalText,
         taggedText,
         post.entities,
@@ -50,7 +52,7 @@ export class BotService {
 
       this.logger.log('✅ Channel post processed successfully.');
     } catch (err: any) {
-      this.handleError(err, adminId);
+      this.handleError(err, this.bot_admin_id);
     }
   }
 
@@ -262,7 +264,7 @@ export class BotService {
         await ctx.answerCbQuery('Posted successfully!');
       } catch (err) {
         await ctx.answerCbQuery('Failed to post.');
-        this.handleError(err, Number(this.config.get<string>('BOT_ADMIN_ID')!));
+        this.handleError(err, this.bot_admin_id);
       } finally {
         this.grammarUpdates.delete(messageId);
       }
