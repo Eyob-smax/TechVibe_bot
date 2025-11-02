@@ -42,4 +42,8 @@ export class BotUpdate {
   async onChannelPost(@Ctx() ctx: Context) {
     await this.botService.onChannelPost(ctx);
   }
+  @On('callback_query')
+  async onCallbackQuery(ctx: Context) {
+    await this.botService.handleCallbackQuery(ctx);
+  }
 }

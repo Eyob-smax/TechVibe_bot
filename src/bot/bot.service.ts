@@ -11,10 +11,10 @@ import { AiService } from '../ai/ai.service.js';
 @Injectable()
 export class BotService {
   private readonly logger = new Logger(BotService.name);
-  private grammarUpdates = new Map<number, { text: string; entities: any[] }>();
+  grammarUpdates = new Map<number, { text: string; entities: any[] }>();
 
   constructor(
-    private readonly config: ConfigService,
+    private config: ConfigService,
     @InjectBot() private readonly bot: Telegraf,
     private readonly emailService: EmailService,
     private readonly postService: PostsService,
@@ -202,42 +202,6 @@ export class BotService {
     }
   }
 
-  @On('callback_query')
-  async onCallbackQuery(ctx: Context) {
-    const query = ctx.callbackQuery;
-    if (!query) {
-      return console.log('no query');
-    }
-    if (!('data' in query)) return;
-
-    const data = query.data;
-    if (data.startsWith('post_grammar:')) {
-      const messageId = Number(data.split(':')[1]);
-      const update = this.grammarUpdates.get(messageId);
-
-      if (!update) {
-        await ctx.answerCbQuery('Update expired or not found.');
-        return;
-      }
-
-      try {
-        const channelId = this.config.get<string>('CHANNEL_ID');
-        if (!channelId) {
-          return;
-        }
-        await this.bot.telegram.sendMessage(channelId, update.text, {
-          entities: update.entities,
-        });
-        await ctx.answerCbQuery('Posted successfully!');
-      } catch (err) {
-        await ctx.answerCbQuery('Failed to post.');
-        this.handleError(err, Number(this.config.get<string>('BOT_ADMIN_ID')!));
-      } finally {
-        this.grammarUpdates.delete(messageId);
-      }
-    }
-  }
-
   private handleError(err: any, adminId: number): void {
     this.logger.error('❌ Failed to process channel post', err?.message);
 
@@ -260,6 +224,48 @@ export class BotService {
         '❌ Failed to send error notification email',
         notifyErr?.message,
       );
+    }
+  }
+
+  async handleCallbackQuery(ctx: Context) {
+    const query = ctx.callbackQuery;
+    if (!query) {
+      return console.log('no query');
+    }
+    if (!('data' in query)) return;
+
+    const data = query.data;
+    if (data.startsWith('post_grammar:')) {
+      const messageId = Number(data.split(':')[1]);
+      const update = this.grammarUpdates.get(messageId);
+
+      if (!update) {
+        await ctx.answerCbQuery('Update expired or not found.');
+        return;
+      }
+
+      try {
+        const channelId = this.config.get<string>('CHANNEL_ID');
+        if (!channelId) {
+          console.log('no channel id');
+          return;
+        }
+        await this.bot.telegram.editMessageText(
+          channelId,
+          messageId,
+          undefined,
+          update.text,
+          {
+            entities: update.entities,
+          },
+        );
+        await ctx.answerCbQuery('Posted successfully!');
+      } catch (err) {
+        await ctx.answerCbQuery('Failed to post.');
+        this.handleError(err, Number(this.config.get<string>('BOT_ADMIN_ID')!));
+      } finally {
+        this.grammarUpdates.delete(messageId);
+      }
     }
   }
 }
