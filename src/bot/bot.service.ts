@@ -19,8 +19,7 @@ export class BotService {
 
   async onChannelPost(ctx: Context) {
     const techVibeChannelId = this.config.get<string>('CHANNEL_ID');
-    const adminId =
-      Number(this.config.get<string>('BOT_ADMIN_ID')) || 1259654531;
+    const adminId = Number(this.config.get<string>('BOT_ADMIN_ID'));
     const channelId = ctx?.channelPost?.chat?.id?.toString();
 
     if (!channelId || techVibeChannelId !== channelId) return;
@@ -49,8 +48,14 @@ export class BotService {
       const options = { entities };
 
       if (post.text) {
-        const { textWithoutTags, uniqueTags } = FormatPostData(post.text);
-        if (uniqueTags.length > 0 && uniqueTags.includes('#ArticleOfTheDay')) {
+        const { textWithoutTags, uniqueTags, skipThis } = FormatPostData(
+          post.text,
+        );
+        if (
+          uniqueTags.length > 0 &&
+          uniqueTags.includes('#ArticleOfTheDay') &&
+          !skipThis
+        ) {
           const { message } = await this.postService.saveNewPosts({
             post: textWithoutTags,
             tags: uniqueTags,
