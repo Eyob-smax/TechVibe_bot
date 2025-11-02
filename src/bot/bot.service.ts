@@ -48,13 +48,13 @@ export class BotService {
       const options = { entities };
 
       if (post.text) {
-        const { textWithoutTags, uniqueTags, skipThis } = FormatPostData(
-          post.text,
-        );
+        const { textWithoutTags, uniqueTags, skipThis, saveThis } =
+          FormatPostData(post.text);
         if (
-          uniqueTags.length > 0 &&
-          uniqueTags.includes('#ArticleOfTheDay') &&
-          !skipThis
+          (uniqueTags?.length > 0 &&
+            uniqueTags?.includes('#ArticleOfTheDay') &&
+            !skipThis) ||
+          saveThis
         ) {
           const { message } = await this.postService.saveNewPosts({
             post: textWithoutTags,
@@ -84,11 +84,19 @@ export class BotService {
         post.audio ||
         post.animation
       ) {
-        const { textWithoutTags, uniqueTags } = FormatPostData(post.caption);
-        if (uniqueTags.length > 0 && uniqueTags.includes('#ArticleOfTheDay')) {
+        const { textWithoutTags, uniqueTags, saveThis, skipThis } =
+          FormatPostData(post.caption);
+        if (
+          (uniqueTags?.length > 0 &&
+            uniqueTags?.includes('#ArticleOfTheDay') &&
+            skipThis) ||
+          saveThis
+        ) {
           const { message } = await this.postService.saveNewPosts({
             post: textWithoutTags,
-            tags: uniqueTags,
+            tags: uniqueTags.includes('#save')
+              ? uniqueTags.filter((tag) => tag !== '#save')
+              : uniqueTags,
             date: new Date(post?.date),
             date_string: formatDate(post?.date) || 'default',
             post_link: `https://t.me/devwitheyob/devwitheyob/${post?.message_id}`,
@@ -116,26 +124,26 @@ export class BotService {
 
       this.logger.log('✅ Channel post processed successfully.');
     } catch (err: any) {
-      this.logger.error('❌ Failed to process channel post', err?.stack);
+      this.logger.error('❌ Failed to process channel post', err?.message);
 
       try {
         await this.bot.telegram.sendMessage(
           adminId,
-          `🚨 Error in Telegram Bot\n\n${err.message}\n<pre>${err.stack}</pre>`,
+          `🚨 Error in Telegram Bot\n\n${err.message}\n<pre>${err.message}</pre>`,
           { parse_mode: 'HTML' },
         );
 
         await this.emailService.sendMail(
           'eyobsmax@gmail.com',
           '🚨 Error in Telegram Bot',
-          `<b>An error occurred while processing a channel post:</b><br><pre>${err.stack}</pre>`,
+          `<b>An error occurred while processing a channel post:</b><br><pre>${err.message}</pre>`,
         );
 
         this.logger.log('📧 Error notification sent successfully.');
       } catch (notifyErr: any) {
         this.logger.error(
           '❌ Failed to send error notification email',
-          notifyErr?.stack,
+          notifyErr?.message,
         );
       }
     }

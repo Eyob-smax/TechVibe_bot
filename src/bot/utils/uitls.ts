@@ -7,12 +7,16 @@ export function addTags(text: string) {
 
   const textWithoutTags = text.replace(/(#\w+|@\w+)/g, '').trimEnd();
 
-  const uniqueTags = Array.from(
+  let uniqueTags = Array.from(
     new Set(['@devwitheyob', '\n#TechVibe', ...foundTags, '@alnova19']),
   );
-  if (uniqueTags.includes('#TechVibe')) {
-    uniqueTags.filter((tag) => tag !== '#TechVibe');
-  }
+
+  const skipThese = ['#TechVibe', '#skip', '#save'];
+
+  uniqueTags = uniqueTags.filter((tag) => {
+    return skipThese.includes(tag) ? false : true;
+  });
+
   const tagSection = `\n\n${uniqueTags.join(' ')}`;
 
   return `${textWithoutTags}${tagSection}`;
@@ -36,17 +40,31 @@ export function formatDailyTechNews(news: IDailyArticle[]) {
 }
 
 export function FormatPostData(text: string) {
-  const foundTags = Array.from(text.matchAll(/(#\w+|@\w+)/g)).map((m) => m[0]);
+  let foundTags = Array.from(text.matchAll(/(#\w+|@\w+)/g)).map((m) => m[0]);
   let skipThis = false;
+  let saveThis = false;
+  const skipThese = [
+    '@alnova19',
+    '#TechVibe',
+    '@devwitheyob',
+    '@devWithEyob',
+    '#save',
+    '#skip',
+  ];
   if (foundTags.includes('#skip')) {
     skipThis = true;
-    foundTags.filter((tag) => tag !== '#skip');
   }
+  if (foundTags.includes('#save')) {
+    saveThis = true;
+  }
+  foundTags = foundTags.filter((tag) =>
+    skipThese.includes(tag) ? false : true,
+  );
 
   const textWithoutTags = text.replace(/(#\w+|@\w+)/g, '').trimEnd();
 
   const uniqueTags = Array.from(new Set([...foundTags]));
-  return { textWithoutTags, uniqueTags, skipThis };
+  return { textWithoutTags, uniqueTags, skipThis, saveThis };
 }
 
 export function formatDate(dateInput?: number) {
