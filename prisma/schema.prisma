@@ -34,3 +34,11 @@ model PostTag {
   @@id([postId, tagId])
 }
 
+model Message{
+  id  Int @id @default(autoincrement())
+  name String? @default("null")
+  email String? @default("null")
+  message String 
+  subject String? @default("null")
+}
+

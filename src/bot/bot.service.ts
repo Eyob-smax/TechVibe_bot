@@ -11,7 +11,10 @@ import { AiService } from '../ai/ai.service.js';
 @Injectable()
 export class BotService {
   private readonly logger = new Logger(BotService.name);
-  grammarUpdates = new Map<number, { text: string; entities: any[] }>();
+  grammarUpdates = new Map<
+    number,
+    { text: string; entities: any[]; caption: boolean }
+  >();
   private bot_admin_id: number;
   constructor(
     private config: ConfigService,
@@ -163,6 +166,15 @@ export class BotService {
   }
 
   private async updateGrammar(text: string, post: any, channelId: string) {
+    const isCaption =
+      post.caption ||
+      post.photo ||
+      post.video ||
+      post.document ||
+      post.audio ||
+      post.animation
+        ? true
+        : false;
     try {
       const updatedText = await this.ai.updateText(text);
       if (updatedText === 'no grammar update') {
@@ -184,6 +196,7 @@ export class BotService {
       newEntities.sort((a: any, b: any) => a.offset - b.offset);
 
       this.grammarUpdates.set(post.message_id, {
+        caption: isCaption,
         text: updatedText,
         entities: newEntities,
       });
@@ -252,15 +265,26 @@ export class BotService {
           console.log('no channel id');
           return;
         }
-        await this.bot.telegram.editMessageText(
-          channelId,
-          messageId,
-          undefined,
-          update.text,
-          {
-            entities: update.entities,
-          },
-        );
+        if (update.caption) {
+          await this.bot.telegram.editMessageCaption(
+            channelId,
+            messageId,
+            undefined,
+            update.text,
+            { caption_entities: update.entities },
+          );
+        } else {
+          await this.bot.telegram.editMessageText(
+            channelId,
+            messageId,
+            undefined,
+            update.text,
+            {
+              entities: update.entities,
+            },
+          );
+        }
+
         await ctx.answerCbQuery('Posted successfully!');
       } catch (err) {
         await ctx.answerCbQuery('Failed to post.');

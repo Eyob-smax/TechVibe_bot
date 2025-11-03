@@ -7,6 +7,7 @@ import { DatabaseModule } from './database/database.module.js';
 import { NewsModule } from './news/news.module.js';
 import { PostsModule } from './posts/posts.module.js';
 import { AiModule } from './ai/ai.module.js';
+import { MessageModule } from './message/message.module.js';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { AiModule } from './ai/ai.module.js';
     NewsModule,
     PostsModule,
     AiModule,
+    MessageModule,
   ],
 })
 export class AppModule {}
