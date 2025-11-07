@@ -110,7 +110,7 @@ export class BotService {
       tags: tagsToSave,
       date: new Date(post?.date),
       date_string: formatDate(post?.date) || 'default',
-      post_link: `https://t.me/devwitheyob/devwitheyob/${post?.message_id}`,
+      post_link: `https://t.me/devwitheyob/${post?.message_id}`,
     });
 
     if (message) {
