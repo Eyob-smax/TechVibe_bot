@@ -15,7 +15,7 @@ export class PostsController {
   @Get()
   async getPosts(
     @Query('topic') topic: string,
-    @Query('max') max: number = 10,
+    @Query('max', ParseIntPipe) max: number = 10,
   ) {
     return await this.postsService.fetchPosts(topic, max);
   }
