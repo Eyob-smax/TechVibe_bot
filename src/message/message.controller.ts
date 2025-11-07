@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { MessageService } from './message.service.js';
 import { CreateMessageDto } from './dto/create-message.dto.js';
@@ -26,17 +27,20 @@ export class MessageController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.messageService.findOne(+id);
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.messageService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateMessageDto: UpdateMessageDto) {
-    return this.messageService.update(+id, updateMessageDto);
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateMessageDto: UpdateMessageDto,
+  ) {
+    return this.messageService.update(id, updateMessageDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.messageService.remove(+id);
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.messageService.remove(id);
   }
 }

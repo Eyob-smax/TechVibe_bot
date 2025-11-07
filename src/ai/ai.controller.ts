@@ -1,14 +1,14 @@
 import {
   Controller,
   Query,
-  Get,
-  Header,
-  Res,
   BadRequestException,
+  Sse,
+  MessageEvent,
+  Logger,
 } from '@nestjs/common';
 import { AiService } from './ai.service.js';
-import type { Response } from 'express';
-import { Logger } from '@nestjs/common';
+import { Observable, of } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 
 @Controller('ai')
 export class AiController {
@@ -16,41 +16,32 @@ export class AiController {
 
   constructor(private readonly aiService: AiService) {}
 
-  @Get('stream')
-  @Header('Content-Type', 'text/event-stream')
-  @Header('Cache-Control', 'no-cache')
-  @Header('Connection', 'keep-alive')
-  @Header('Access-Control-Allow-Origin', '*')
-  async stream(@Res() res: Response, @Query('topic') topic: string) {
+  @Sse('stream')
+  stream(@Query('topic') topic: string): Observable<MessageEvent> {
     if (!topic?.trim()) {
       throw new BadRequestException('Topic query parameter is required');
     }
 
-    res.flushHeaders();
+    this.logger.log(`Starting SSE stream for topic: ${topic}`);
 
-    const subscription = this.aiService.streamResponse(topic).subscribe({
-      next: (chunk) => {
-        res.write(`data: ${JSON.stringify(chunk.data)}\n\n`);
-      },
-      complete: () => {
-        this.logger.log(`Stream completed for topic: ${topic}`);
-        res.end();
-      },
-      error: (err) => {
+    return this.aiService.streamResponse(topic).pipe(
+      map((chunk) => {
+        console.log(`Sending chunk: ${chunk.data}`);
+        return {
+          event: 'message',
+          data: chunk.data,
+        };
+      }),
+      catchError((err) => {
         this.logger.error(
           `Stream error for topic "${topic}": ${err.message}`,
           err.stack,
         );
-        res.write(
-          `event: error\ndata: ${JSON.stringify({ error: err.message })}\n\n`,
-        );
-        res.end();
-      },
-    });
 
-    res.on('close', () => {
-      subscription.unsubscribe();
-      this.logger.log(`Client disconnected for topic: ${topic}`);
-    });
+        return of({
+          data: { error: err.message },
+        });
+      }),
+    );
   }
 }
