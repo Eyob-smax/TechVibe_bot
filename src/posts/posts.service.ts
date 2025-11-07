@@ -9,7 +9,7 @@ export class PostsService {
   async fetchPosts(topic: string, max: number) {
     try {
       return await this.databaseService.post.findMany({
-        include: { tags: { include: { tag: true } } },
+        include: { PostTag: { include: { Tag: true } } },
       });
     } catch (err) {
       console.error('Error fetching posts:', err);
@@ -39,13 +39,14 @@ export class PostsService {
           post_link: post.post_link,
           date_string: post.date_string,
           date: post.date,
-          tags: {
+          PostTag: {
             create: tagRecords.map((tag) => ({
-              tag: { connect: { id: tag.id } },
+              Tag: { connect: { id: tag.id } },
             })),
           },
+          updatedAt: new Date(),
         },
-        include: { tags: { include: { tag: true } } },
+        include: { PostTag: { include: { Tag: true } } },
       });
       return {
         message: `New post saved to the database: <a href="${post.post_link}"><b>Go to the message</b></a>`,
@@ -62,7 +63,7 @@ export class PostsService {
 
       await this.databaseService.tag.deleteMany({
         where: {
-          posts: { none: {} },
+          PostTag: { none: {} },
         },
       });
 

@@ -3,42 +3,41 @@ generator client {
 }
 
 datasource db {
-  provider   = "postgresql"
-  url        = env("DATABASE_URL")
-  directUrl  = env("DIRECT_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Post {
-  id           Int      @id @default(autoincrement())
-  post         String
-  post_link    String?
-  date_string  String
-  date         DateTime
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  tags         PostTag[]
-}
-
-model Tag {
-  id    Int     @id @default(autoincrement())
-  tag   String  @unique
-  posts PostTag[]
+  id          Int       @id @default(autoincrement())
+  post        String
+  post_link   String?
+  date_string String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime
+  date        DateTime
+  PostTag     PostTag[]
 }
 
 model PostTag {
-  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   postId Int
-  tag    Tag  @relation(fields: [tagId], references: [id], onDelete: NoAction, onUpdate:NoAction)
   tagId  Int
+  Post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  Tag    Tag  @relation(fields: [tagId], references: [id])
 
   @@id([postId, tagId])
 }
 
-model Message{
-  id  Int @id @default(autoincrement())
-  name String? @default("null")
-  email String? @default("null")
-  message String 
-  subject String? @default("null")
+model Tag {
+  id      Int       @id @default(autoincrement())
+  tag     String    @unique
+  PostTag PostTag[]
 }
 
+model Message {
+  id  Int @id @default(autoincrement())
+  name String 
+  email String 
+  subject String
+  Message String
+}

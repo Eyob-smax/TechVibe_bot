@@ -1,11 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { CreateMessageDto } from './dto/create-message.dto.js';
 import { UpdateMessageDto } from './dto/update-message.dto.js';
+import { DatabaseService } from '../database/database.service.js';
 
 @Injectable()
 export class MessageService {
+  constructor(private readonly databseService: DatabaseService) {}
   create(createMessageDto: CreateMessageDto) {
-    return 'This action adds a new message';
+    try {
+    } catch (error) {}
   }
 
   findAll() {
