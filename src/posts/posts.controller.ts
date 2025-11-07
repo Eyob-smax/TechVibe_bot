@@ -13,7 +13,10 @@ export class PostsController {
   constructor(private readonly postsService: PostsService) {}
 
   @Get()
-  async getPosts(@Query('topic') topic: string, @Query('max') max: number) {
+  async getPosts(
+    @Query('topic') topic: string,
+    @Query('max') max: number = 10,
+  ) {
     return await this.postsService.fetchPosts(topic, max);
   }
   @Delete()
