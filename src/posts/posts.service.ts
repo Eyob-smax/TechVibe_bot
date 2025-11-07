@@ -9,6 +9,8 @@ export class PostsService {
   async fetchPosts(topic: string, max: number) {
     try {
       return await this.databaseService.post.findMany({
+        skip: 0,
+        take: max ? max : undefined,
         include: { PostTag: { include: { Tag: true } } },
       });
     } catch (err) {
