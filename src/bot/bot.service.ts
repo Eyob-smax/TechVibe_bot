@@ -109,7 +109,7 @@ export class BotService {
       post: textWithoutTags,
       tags: tagsToSave,
       date: new Date(post?.date),
-      date_string: formatDate(post?.date) || 'default',
+      date_string: new Date().toDateString() || 'default',
       post_link: `https://t.me/devwitheyob/${post?.message_id}`,
     });
 
