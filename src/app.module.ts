@@ -18,7 +18,7 @@ import { MessageModule } from './message/message.module.js';
     }),
     TelegrafModule.forRootAsync({
       useFactory: (config: ConfigService) => {
-        const token = config.get<string>('Bot_TOKEN');
+        const token = config.get<string>('BOT_TOKEN');
         if (!token) {
           throw new Error("can't connect to the bot!");
         }
