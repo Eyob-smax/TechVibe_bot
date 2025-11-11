@@ -10,6 +10,7 @@ export class PostsService {
     try {
       return await this.databaseService.post.findMany({
         take: max,
+        orderBy: { date: 'desc' },
         include: { PostTag: { include: { Tag: true } } },
       });
     } catch (err) {
