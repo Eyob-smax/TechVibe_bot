@@ -16,17 +16,17 @@ import { MessageModule } from './message/message.module.js';
       envFilePath: '.env',
       isGlobal: true,
     }),
-    TelegrafModule.forRootAsync({
-      useFactory: (config: ConfigService) => {
-        const token = config.get<string>('Bot_TOKEN');
-        if (!token) {
-          throw new Error("can't connect to the bot!");
-        }
-        return { token };
-      },
-      inject: [ConfigService],
-    }),
-    BotModule,
+    // TelegrafModule.forRootAsync({
+    //   useFactory: (config: ConfigService) => {
+    //     const token = config.get<string>('Bot_TOKEN');
+    //     if (!token) {
+    //       throw new Error("can't connect to the bot!");
+    //     }
+    //     return { token };
+    //   },
+    //   inject: [ConfigService],
+    // }),
+    // BotModule,
     EmailModule,
     DatabaseModule,
     NewsModule,

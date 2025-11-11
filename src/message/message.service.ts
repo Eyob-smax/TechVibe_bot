@@ -34,7 +34,6 @@ export class MessageService {
       });
 
       await this.emailService.sendMail(
-        email,
         subject || 'New Contact Form Submission',
         message,
         name,

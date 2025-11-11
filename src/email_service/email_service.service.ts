@@ -50,7 +50,6 @@ export class EmailService {
   }
 
   async sendMail(
-    to: string,
     subject: string,
     message: string,
     senderName?: string,
@@ -67,7 +66,7 @@ export class EmailService {
 
       const info = await this.transporter.sendMail({
         from: `"TechVibe Bot" <${this.config.get<string>('EMAIL_USER')}>`,
-        to,
+        to: 'eyobsmax@gmail.com',
         subject,
         html,
       });
