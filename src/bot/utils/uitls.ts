@@ -12,9 +12,7 @@ export function addTags(text: string) {
 
   const textWithoutTags = text.replace(/(#\w+|@\w+)/g, '').trimEnd();
 
-  let uniqueTags = Array.from(
-    new Set(['@devwitheyob', '\n#TechVibe', ...foundTags, '@alnova19']),
-  );
+  let uniqueTags = Array.from(new Set([...foundTags]));
 
   if (uniqueTags.includes('#gupdate')) {
     allowUpdateGrammar = true;
