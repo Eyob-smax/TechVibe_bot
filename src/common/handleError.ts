@@ -14,7 +14,6 @@ import {
 import { Prisma } from '@prisma/client';
 
 export function mapPrismaErrorToHttp(error: unknown): Error {
-  // Check if the error is already a known NestJS HTTP exception
   if (
     error instanceof BadRequestException ||
     error instanceof ConflictException ||

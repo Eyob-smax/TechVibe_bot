@@ -1,6 +1,6 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service.js';
-import { IPost } from 'src/bot/utils/types.js';
+import { IPost } from '../bot/utils/types.js';
 
 @Injectable()
 export class PostsService {

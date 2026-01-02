@@ -1,18 +1,9 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Observable } from 'rxjs';
-import { GoogleGenAI } from '@google/genai';
+import { Groq } from 'groq-sdk';
 
-interface GenerateContentStreamOptions {
-  model: string;
-  config: {
-    thinkingConfig: { thinkingBudget: number };
-    tools: Array<{ googleSearch: Record<string, unknown> }>;
-  };
-  contents: Array<{ role: string; parts: Array<{ text: string }> }>;
-}
-
-export interface AiStreamChunk {
+interface AiStreamChunk {
   data: string;
 }
 
@@ -393,22 +384,16 @@ export const blogPosts = [
 @Injectable()
 export class AiService {
   private readonly logger = new Logger(AiService.name);
-  private ai: GoogleGenAI;
-  private tools = [{ googleSearch: {} }];
-  private Googleconfig = {
-    thinkingConfig: { thinkingBudget: -1 },
-    tools: this.tools,
-  };
   private model: string;
+  private groq: Groq = new Groq({ apiKey: process.env.GROQ_API_KEY || '' });
 
   constructor(private readonly config: ConfigService) {
-    const apiKey = this.config.get<string>('GEMINI_API_KEY');
-    this.model = this.config.get<string>('AI_MODEL') || 'gemini-1.5-flash';
+    this.model =
+      this.config.get<string>('AI_MODEL') || 'llama-3.3-70b-versatile';
 
-    if (!apiKey) {
-      throw new Error('GEMINI_API_KEY is not configured');
+    if (!process.env.GROQ_API_KEY) {
+      throw new Error('GROQ_API_KEY is not configured');
     }
-    this.ai = new GoogleGenAI({ apiKey });
   }
 
   async updateText(text: string): Promise<string> {
@@ -417,23 +402,24 @@ export class AiService {
     }
 
     const prompt = `
-      You are a professional editor. Fix grammar, spelling, punctuation, and improve clarity and flow.
-      Keep the original meaning intact. Do not add or remove information.
-      Return only the corrected text — no explanations, no markdown, no quotes.
+You are a professional editor. Fix grammar, spelling, punctuation, and improve clarity and flow.
+Keep the original meaning intact. Do not add or remove information.
+Return only the corrected text — no explanations, no markdown, no quotes.
 
-      Original text:
-      """${text.trim()}"""
+Original text:
+"""${text.trim()}"""
     `;
 
     try {
-      const result = await this.ai.models.generateContent({
+      const completion = await this.groq.chat.completions.create({
+        messages: [{ role: 'user', content: prompt }],
         model: this.model,
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        config: this.Googleconfig,
-      } as GenerateContentStreamOptions);
+        temperature: 0.5,
+        max_tokens: 1024,
+      });
 
       const correctedText =
-        result?.candidates?.[0].content?.parts?.[0].text || 'no grammar update';
+        completion.choices[0]?.message?.content?.trim() || 'no grammar update';
       return correctedText;
     } catch (error: any) {
       this.logger.error(
@@ -454,12 +440,7 @@ export class AiService {
 
       (async () => {
         try {
-          const contents = [
-            {
-              role: 'user', // Changed from 'system' to 'user'
-              parts: [
-                {
-                  text: `
+          const systemPrompt = `
 You are an AI assistant embedded in Eyob's personal portfolio website. Your purpose is to help visitors learn more about Eyob by answering questions ONLY using the provided JSON context. Be friendly, approachable, and never boring. You can respond naturally to casual greetings or small talk (e.g., "Hi" → "Hey! How’s it going? I’m Eyob's AI assistant, ask me anything about his projects, skills, or journey!").
 
 Your responsibilities:
@@ -470,7 +451,7 @@ Your responsibilities:
   • Technologies used
   • Live URL (if available)
   • GitHub repository link (if available)
-- Reference blog posts from Eyob's active Telegram coding community to illustrate achievements, learning experiences, or insights when relevant. Eyob shares his daily coding journey and progress in this community.
+- Reference blog posts from Eyob's active Telegram coding community to illustrate achievements, learning experiences, or insights when relevant.
 - Respond in a friendly and concise way; make answers engaging and human-like.
 
 Rules:
@@ -481,9 +462,6 @@ Rules:
 - Never hallucinate unknown information.
 - If the user asks about multiple projects or posts, return results in a clean bullet or list format.
 
-Goal:
-Help visitors get to know Eyob better through his timeline, experience, skillset, projects, and insights shared in his Telegram coding community.
-
 Context:
 Projects = ${JSON.stringify(projects)}
 Timeline = ${JSON.stringify(TimeLineData)}
@@ -491,29 +469,25 @@ Skills = ${JSON.stringify(tech_stack)}
 Experience = ${JSON.stringify(experience)}
 Personal Qualities = ${JSON.stringify(qualities)}
 Blog Posts (Telegram Community) = ${JSON.stringify(blogPosts)}
-`,
-                },
-                {
-                  text: topic, // Separate the user topic as another part for clarity
-                },
-              ],
-            },
-          ];
+`;
 
-          const stream = await this.ai.models.generateContentStream({
+          const stream = await this.groq.chat.completions.create({
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: topic },
+            ],
             model: this.model,
-            config: this.Googleconfig,
-            contents,
-          } as GenerateContentStreamOptions);
+            temperature: 0.7,
+            max_tokens: 1024,
+            stream: true,
+          });
 
           for await (const chunk of stream) {
             if (isCancelled) break;
-            if (chunk.text) {
-              subscriber.next({ data: chunk.text });
-            } else {
-              this.logger.warn(
-                `Received chunk without text for topic: ${topic}`,
-              );
+
+            const content = chunk.choices[0]?.delta?.content;
+            if (content) {
+              subscriber.next({ data: content });
             }
           }
 

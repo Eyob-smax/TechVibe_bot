@@ -36,7 +36,6 @@ export class EmailService {
       `;
     }
 
-    // Bot/AI template
     return `
       <div style="font-family: Arial, sans-serif; line-height:1.5; color:#333;">
         <h2 style="color:#5c8a84;">AI Bot Response</h2>
