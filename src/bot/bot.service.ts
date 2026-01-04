@@ -107,6 +107,8 @@ export class BotService {
     const { textWithoutTags, uniqueTags, skipThis, saveThis } =
       FormatPostData(textToFormat);
 
+    console.log('Post data format:', FormatPostData(textToFormat));
+
     const shouldSave =
       (uniqueTags?.length > 0 &&
         uniqueTags.includes('#ArticleOfTheDay') &&
@@ -116,7 +118,7 @@ export class BotService {
     if (!shouldSave) return;
 
     const tagsToSave = uniqueTags.includes('#save')
-      ? uniqueTags.filter((tag) => tag !== '#save')
+      ? uniqueTags.filter((tag) => tag !== '#save').slice(0, 1)
       : uniqueTags;
 
     const { message } = await this.postService.saveNewPosts({
