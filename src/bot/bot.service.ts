@@ -31,27 +31,41 @@ export class BotService {
 
     const channelId = ctx?.channelPost?.chat?.id?.toString();
 
-    if (!channelId || techVibeChannelId !== channelId) {
-      return;
+    if (!channelId || !techVibeChannelId) {
+      return await this.bot.telegram.sendMessage(
+        this.bot_admin_id,
+        `<b>ERROR</b> \n\nChannel ID is not configured properly.`,
+        { parse_mode: 'HTML' },
+      );
     }
 
     try {
       const post = ctx.channelPost as any;
+
       const originalText = post.text || post.caption || '';
       const { taggedText, allowUpdateGrammar } = addTags(originalText);
       const entities = this.prepareEntities(post, taggedText);
+
       await this.handlePostSaving(post);
       if (allowUpdateGrammar) {
-        await this.updateGrammar(taggedText, post, channelId);
+        await this.updateGrammar(taggedText, post, channelId as string);
       } else {
-        await this.editPostMessage(post, channelId, taggedText, entities);
+        taggedText !== originalText &&
+          (await this.editPostMessage(
+            post,
+            channelId as string,
+            taggedText,
+            entities,
+          ));
       }
-      await this.notifyAdminOnUpdate(
-        this.bot_admin_id,
-        originalText,
-        taggedText,
-        post.entities,
-      );
+      taggedText !== originalText
+        ? await this.notifyAdminOnUpdate(
+            this.bot_admin_id,
+            originalText,
+            taggedText,
+            post.entities,
+          )
+        : null;
 
       this.logger.log('✅ Channel post processed successfully.');
     } catch (err: any) {
@@ -71,7 +85,7 @@ export class BotService {
         offset,
         length: target.length,
       });
-      offset = taggedText.indexOf(target, offset + target.length);
+      offset = taggedText?.indexOf(target, offset + target.length);
     }
 
     entities.sort((a: any, b: any) => a.offset - b.offset);
@@ -126,7 +140,7 @@ export class BotService {
     taggedText: string,
     entities: any[],
   ): Promise<void> {
-    if (post.text) {
+    if (post.text && post.text !== taggedText) {
       await this.bot.telegram.editMessageText(
         channelId,
         post.message_id,
@@ -142,13 +156,14 @@ export class BotService {
       post.audio ||
       post.animation
     ) {
-      await this.bot.telegram.editMessageCaption(
-        channelId,
-        post.message_id,
-        undefined,
-        taggedText,
-        { caption_entities: entities },
-      );
+      post.caption !== taggedText &&
+        (await this.bot.telegram.editMessageCaption(
+          channelId,
+          post.message_id,
+          undefined,
+          taggedText,
+          { caption_entities: entities },
+        ));
     }
   }
 
@@ -227,11 +242,11 @@ export class BotService {
         { parse_mode: 'HTML' },
       );
 
-      this.emailService.sendMail(
-        'eyobsmax@gmail.com',
-        '🚨 Error in Telegram Bot',
-        `<b>An error occurred while processing a channel post:</b><br><pre>${err.message}</pre>`,
-      );
+      // this.emailService.sendMail(
+      //   'eyobsmax@gmail.com',
+      //   '🚨 Error in Telegram Bot',
+      //   `<b>An error occurred while processing a channel post:</b><br><pre>${err.message}</pre>`,
+      // );
 
       this.logger.log('📧 Error notification sent successfully.');
     } catch (notifyErr: any) {

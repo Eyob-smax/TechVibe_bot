@@ -4,21 +4,34 @@ export function addTags(text: string) {
   let allowUpdateGrammar = false;
   if (!text)
     return {
-      taggedText: '@devwitheyob\n#TechVibe @alnova19',
+      taggedText: '@devwitheyob\n#TechVibe ',
       allowUpdateGrammar,
     };
 
   const foundTags = Array.from(text.matchAll(/(#\w+|@\w+)/g)).map((m) => m[0]);
 
+  if (foundTags.length === 0) {
+    return {
+      taggedText: `${text}\n\n@devwitheyob\n#TechVibe `,
+      allowUpdateGrammar,
+    };
+  }
+
+  if (foundTags.includes('#notag')) {
+    return { taggedText: text, allowUpdateGrammar };
+  }
+
   const textWithoutTags = text.replace(/(#\w+|@\w+)/g, '').trimEnd();
 
-  let uniqueTags = Array.from(new Set([...foundTags]));
+  let uniqueTags = Array.from(
+    new Set(['@devwitheyob\n', ...foundTags, '#TechVibe']),
+  );
 
   if (uniqueTags.includes('#gupdate')) {
     allowUpdateGrammar = true;
   }
 
-  const skipThese = ['#TechVibe', '#skip', '#save', '#gupdate'];
+  const skipThese = ['#skip', '#save', '#gupdate'];
 
   uniqueTags = uniqueTags.filter((tag) => {
     return skipThese.includes(tag) ? false : true;
