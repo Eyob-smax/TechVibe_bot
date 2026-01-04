@@ -2,7 +2,7 @@
 /dist
 /node_modules
 /build
-./ecosystem.config.js
+ecosystem.config.js
 
 # Logs
 logs
