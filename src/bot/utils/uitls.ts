@@ -24,7 +24,7 @@ export function addTags(text: string) {
   const textWithoutTags = text.replace(/(#\w+|@\w+)/g, '').trimEnd();
 
   let uniqueTags = Array.from(
-    new Set(['@devwitheyob\n', ...foundTags, '#TechVibe']),
+    new Set(['@devwitheyob', '\n#TechVibe', ...foundTags]),
   );
 
   if (uniqueTags.includes('#gupdate')) {

@@ -107,8 +107,6 @@ export class BotService {
     const { textWithoutTags, uniqueTags, skipThis, saveThis } =
       FormatPostData(textToFormat);
 
-    console.log('Post data format:', FormatPostData(textToFormat));
-
     const shouldSave =
       (uniqueTags?.length > 0 &&
         uniqueTags.includes('#ArticleOfTheDay') &&
