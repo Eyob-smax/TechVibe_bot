@@ -8,6 +8,11 @@ import { NewsModule } from './news/news.module.js';
 import { PostsModule } from './posts/posts.module.js';
 import { AiModule } from './ai/ai.module.js';
 import { MessageModule } from './message/message.module.js';
+import dotenv from 'dotenv';
+
+dotenv.config({
+  path: '../../.env',
+});
 
 @Module({
   imports: [
